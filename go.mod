@@ -1,4 +1,4 @@
-module service
+module gitee.com/griffin702/service
 
 go 1.13
 
