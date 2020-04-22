@@ -388,11 +388,12 @@ func (t *Tool) PtrIsNil(ptr interface{}) bool {
 	return false
 }
 
-// MD5HashString MD5哈希值
-func (t *Tool) MD5HashString(s string) string {
+// EncodeMD5 MD5哈希值
+func (t *Tool) EncodeMD5(value string) string {
 	h := md5.New()
-	h.Write([]byte(s))
-	return fmt.Sprintf("%x", h.Sum(nil))
+	h.Write([]byte(value))
+	//return fmt.Sprintf("%x", h.Sum(nil))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // BcryptHashGenerate 生成bctypt的哈希值
@@ -537,13 +538,6 @@ func (t *Tool) VerifyMobileFormat(mobileNum string) bool {
 	regular := "^((13[0-9])|(14[5,7])|(15[0-3,5-9])|(17[0,3,5-8])|(18[0-9])|166|198|199|(147))\\d{8}$"
 	reg := regexp.MustCompile(regular)
 	return reg.MatchString(mobileNum)
-}
-
-func (t *Tool) EncodeMD5(value string) string {
-	m := md5.New()
-	m.Write([]byte(value))
-
-	return hex.EncodeToString(m.Sum(nil))
 }
 
 //金额转大写
