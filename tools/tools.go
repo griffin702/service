@@ -252,7 +252,7 @@ func (t *Tool) SubString(str string, start, length int) string {
 /**
  * TimeFormat
  */
-func (t *Tool) TimeFormat(time *time.Time, format string) string {
+func (t *Tool) TimeFormat(time time.Time, format string) string {
 	var datePatterns = []string{
 		// year
 		"Y", "2006", // A full numeric representation of a year, 4 digits   Examples: 1999 or 2003
