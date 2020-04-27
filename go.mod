@@ -1,4 +1,4 @@
-module gitee.com/griffin702/service
+module github.com/griffin702/service
 
 go 1.13
 
