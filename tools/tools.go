@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/griffin702/service/captcha"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -412,6 +413,11 @@ func (t *Tool) BcryptHashCompare(current string, req string) bool {
 		return true
 	}
 	return false
+}
+
+// CaptchaGenerate 生成captcha
+func (t *Tool) CaptchaGenerate(w, h, codeLen, mode int, opt ...string) (code string, image string, err error) {
+	return captcha.Generate(w, h, codeLen, mode, opt...)
 }
 
 // MustUUID 创建UUID，如果发生错误则抛出panic
