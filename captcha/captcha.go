@@ -29,8 +29,15 @@ const (
 	defaultDpi      = 72
 )
 
+type Image []byte
+
+func (i Image) ToBase64String() string {
+	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(i)
+}
+
+//"data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
 // CaptchaGenerate 生成captcha
-func Generate(w, h, codeLen, mode int, opt ...string) (code string, image string, err error) {
+func Generate(w, h, codeLen, mode int, opt ...string) (code string, image Image, err error) {
 	path, name := "../configs", "captcha"
 	if len(opt) == 2 {
 		path = opt[0]
@@ -47,7 +54,7 @@ func Generate(w, h, codeLen, mode int, opt ...string) (code string, image string
 		return
 	}
 	code = c
-	image = "data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
+	image = buf.Bytes()
 	return
 }
 
