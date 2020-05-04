@@ -31,7 +31,7 @@ const (
 
 // CaptchaGenerate 生成captcha
 func Generate(w, h, codeLen, mode int, opt ...string) (code string, image string, err error) {
-	path, name := "./configs", "free"
+	path, name := "../configs", "captcha"
 	if len(opt) == 2 {
 		path = opt[0]
 		name = opt[1]
