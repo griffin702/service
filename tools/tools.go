@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	jwtGo "github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
+	"github.com/griffin702/ginana/library/mdw/jwt"
 	"github.com/griffin702/service/captcha"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -427,6 +429,40 @@ func (t *Tool) MustUUID() string {
 		panic(err)
 	}
 	return v.String()
+}
+
+func (t *Tool) JwtGenerate(mapClaims jwt.MapClaims, secret string) (token string) {
+	j := jwt.NewTokenWithClaims(jwt.SigningMethodHS256, mapClaims)
+	token, _ = j.SignedString(secret)
+	return
+}
+
+func (t *Tool) JwtParse(str string, secret string, disableExpired ...bool) (token *jwt.Token, err error) {
+	var exp bool
+	if len(disableExpired) > 0 {
+		exp = disableExpired[0]
+	}
+	if str == "" {
+		return nil, jwt.ErrTokenMissing
+	}
+	jwtParser := new(jwtGo.Parser)
+	parsedToken, err := jwtParser.Parse(str, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !parsedToken.Valid {
+		return nil, jwt.ErrTokenInvalid
+	}
+	if !exp {
+		if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
+			if expired := claims.VerifyExpiresAt(time.Now().Unix(), true); !expired {
+				return nil, jwt.ErrTokenExpired
+			}
+		}
+	}
+	return parsedToken, nil
 }
 
 func (t *Tool) HideStar(str string) (result string) {
