@@ -433,7 +433,7 @@ func (t *Tool) MustUUID() string {
 
 func (t *Tool) JwtGenerate(claims jwt.MapClaims, secret string) (token string) {
 	j := jwt.NewTokenWithClaims(jwt.SigningMethodHS256, claims)
-	token, _ = j.SignedString(secret)
+	token, _ = j.SignedString([]byte(secret))
 	return
 }
 
