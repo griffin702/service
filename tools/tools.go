@@ -102,12 +102,42 @@ func (t *Tool) FloatToStr(f float64) string {
  * struct转成json
  */
 func (t *Tool) StructToStr(data interface{}) (string, error) {
+	dt := reflect.TypeOf(data)
+	if dt.Kind() != reflect.Ptr {
+		return "", fmt.Errorf("data must be a pointer")
+	}
+	dek := dt.Elem().Kind()
+	if dek != reflect.Map && dek != reflect.Struct {
+		return "", fmt.Errorf("data must be a struct")
+	}
 	b, err := json.Marshal(data)
 	if err != nil {
 		return "", err
-	} else {
-		return string(b), nil
 	}
+	return string(b), nil
+}
+
+/**
+ * map换到struct, 同时也支持struct
+ */
+func (t *Tool) MapToStruct(m, obj interface{}) (err error) {
+	mt := reflect.TypeOf(m)
+	ot := reflect.TypeOf(obj)
+	if mt.Kind() != reflect.Ptr || ot.Kind() != reflect.Ptr {
+		return fmt.Errorf("map and obj must be a pointer")
+	}
+	if ot.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("obj must be a struct")
+	}
+	if mt.Elem().Kind() != reflect.Map && mt.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("type must be a map or struct")
+	}
+	jsonStr, err := json.Marshal(m)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(jsonStr, obj)
+	return
 }
 
 /**
@@ -148,57 +178,6 @@ func (t *Tool) StructToMap(obj interface{}) (result map[string]interface{}, err 
 		}
 	}
 	return
-}
-
-/**
- * 结构体赋值到另一个结构体
- */
-func (t *Tool) StructToStruct(source, input interface{}) (err error) {
-	sourceVal := reflect.ValueOf(source)
-	inputVal := reflect.ValueOf(input)
-	if sourceVal.Kind() != reflect.Ptr {
-		return fmt.Errorf("source must be a pointer")
-	}
-
-	if inputVal.Kind() != reflect.Struct {
-		return fmt.Errorf("input must be a struct")
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%v", r)
-			log.Println(r)
-			return
-		}
-	}()
-	for i := 0; i < inputVal.NumField(); i++ {
-		for j := 0; j < sourceVal.Elem().NumField(); j++ {
-			// 零值处理
-			if inputVal.Field(i).IsZero() {
-				continue
-			}
-			if t.equalName(sourceVal.Type().Elem().Field(j), inputVal.Type().Field(i)) {
-				_ = t.assignment(sourceVal.Elem().Field(i), inputVal.Field(j))
-				break
-			}
-		}
-	}
-	return nil
-}
-
-func (t *Tool) assignment(s1, s2 reflect.Value) (err error) {
-	//fmt.Println(s1.Type(), s2.Type())
-	if s1.Kind() != s2.Kind() {
-		err = fmt.Errorf("字段种类必须一致")
-		return
-	}
-	if s1.Type() == s2.Type() {
-		s1.Set(s2)
-	}
-	return
-}
-
-func (t *Tool) equalName(s1, s2 reflect.StructField) bool {
-	return s1.Name == s2.Name
 }
 
 /**
