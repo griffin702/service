@@ -43,14 +43,14 @@ var (
 )
 
 type FileInfo struct {
-	Config        *Config
-	Image         image.Image
-	Size          int64
-	FileType      string
-	Name          string
-	URL           string `json:"url"`
-	ScreenShotURL string `json:"screen_shot_url"`
-	DialogID      string `json:"dialog_id"`
+	Config        *Config     `json:"-"`
+	Image         image.Image `json:"-"`
+	Size          int64       `json:"-"`
+	FileType      string      `json:"-"`
+	Name          string      `json:"name"`
+	URL           string      `json:"url"`
+	ScreenShotURL string      `json:"screen_shot_url"`
+	DialogID      string      `json:"dialog_id"`
 }
 
 type Sizer interface {
