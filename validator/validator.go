@@ -1,7 +1,10 @@
 package validator
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/go-playground/locales/zh"
@@ -22,6 +25,7 @@ func NewValidator() Validator {
 type defaultValidator struct {
 	once     sync.Once
 	validate *validator.Validate
+	trans    ut.Translator
 }
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
@@ -38,6 +42,14 @@ func (v *defaultValidator) ValidateStruct(obj interface{}, translation ...bool) 
 	if valueType == reflect.Struct {
 		v.lazyInit(t)
 		if err := v.validate.Struct(obj); err != nil {
+			if tErr, ok := err.(validator.ValidationErrors); ok {
+				var list []string
+				for k, v := range tErr.Translate(v.trans) {
+					list = append(list, fmt.Sprintf("Key: %s Error: %s", k, v))
+				}
+				result := strings.Join(list, ", ")
+				return errors.New(result)
+			}
 			return err
 		}
 	}
@@ -64,8 +76,8 @@ func (v *defaultValidator) lazyInit(translation bool) {
 		if translation {
 			cn := zh.New()
 			uni := ut.New(cn, cn)
-			trans, _ := uni.GetTranslator("zh")
-			_ = zhTranslations.RegisterDefaultTranslations(v.validate, trans)
+			v.trans, _ = uni.GetTranslator("zh")
+			_ = zhTranslations.RegisterDefaultTranslations(v.validate, v.trans)
 		}
 	})
 }
