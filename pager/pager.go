@@ -39,6 +39,9 @@ func (p *Pager) url(page int64) string {
 }
 
 func (p *Pager) ToString() string {
+	if p.AllCount <= p.PageSize {
+		return ""
+	}
 	var buf bytes.Buffer
 	var from, to, limitLink, offset, totalpage int64
 	var omit string
