@@ -2,7 +2,6 @@ package validator
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -44,8 +43,9 @@ func (v *defaultValidator) ValidateStruct(obj interface{}, translation ...bool) 
 		if err := v.validate.Struct(obj); err != nil {
 			if tErr, ok := err.(validator.ValidationErrors); ok {
 				var list []string
-				for k, v := range tErr.Translate(v.trans) {
-					list = append(list, fmt.Sprintf("Key: %s Error: %s", k, v))
+				for _, v := range tErr.Translate(v.trans) {
+					//list = append(list, fmt.Sprintf("Key: %s Error: %s", k, v))
+					list = append(list, v)
 				}
 				result := strings.Join(list, ", ")
 				return errors.New(result)
@@ -79,5 +79,22 @@ func (v *defaultValidator) lazyInit(translation bool) {
 			v.trans, _ = uni.GetTranslator("zh")
 			_ = zhTranslations.RegisterDefaultTranslations(v.validate, v.trans)
 		}
+		_ = v.validate.RegisterValidation("checknp", checkNewPassword)
 	})
+}
+
+// 自定义验证函数
+func checkNewPassword(fl validator.FieldLevel) bool {
+	p := fl.Field()
+	if p.Len() > 0 {
+		np := fl.Parent().Elem().FieldByName("NewPassword")
+		if np.Len() == 0 {
+			return false
+		}
+		npa := fl.Parent().Elem().FieldByName("NewPasswordAgain")
+		if npa.Len() == 0 {
+			return false
+		}
+	}
+	return true
 }
