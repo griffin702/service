@@ -73,14 +73,18 @@ func (v *defaultValidator) lazyInit(translation bool) {
 	v.once.Do(func() {
 		v.validate = validator.New()
 		v.validate.SetTagName("valid")
+		_ = v.validate.RegisterValidation("ck_np", checkNewPassword)
 		if translation {
 			cn := zh.New()
 			uni := ut.New(cn, cn)
 			v.trans, _ = uni.GetTranslator("zh")
 			_ = zhTranslations.RegisterDefaultTranslations(v.validate, v.trans)
 		}
-		_ = v.validate.RegisterValidation("checknp", checkNewPassword)
 	})
+}
+
+func (v *defaultValidator) RegisterValidation(tag string, fn validator.Func, callValidationEvenIfNull ...bool) error {
+	return v.validate.RegisterValidation(tag, fn, callValidationEvenIfNull...)
 }
 
 // 自定义验证函数
