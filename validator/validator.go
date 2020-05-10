@@ -15,6 +15,7 @@ import (
 type Validator interface {
 	ValidateStruct(obj interface{}, translation ...bool) error
 	Engine(translation ...bool) interface{}
+	RegisterValidation(tag string, fn validator.Func, callValidationEvenIfNull ...bool) error
 }
 
 func NewValidator() Validator {
