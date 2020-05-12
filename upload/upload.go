@@ -23,6 +23,7 @@ type Config struct {
 	MinSize        int64
 	MaxSize        int64
 	MaxWidthHeight int
+	SmallMaxWH     int
 	AlbumID        int64
 	LastSource     string
 	UploadType     int
@@ -63,6 +64,7 @@ func NewFileInfo(file io.Reader, fileName string, opt ...*Config) (*FileInfo, er
 		MinSize:        1,
 		MaxSize:        10000000,
 		MaxWidthHeight: 1280,
+		SmallMaxWH:     720,
 		UploadType:     1,
 	}
 	cfg := new(Config)
@@ -80,6 +82,9 @@ func NewFileInfo(file io.Reader, fileName string, opt ...*Config) (*FileInfo, er
 	}
 	if cfg.MaxWidthHeight != 0 {
 		config.MaxWidthHeight = cfg.MaxWidthHeight
+	}
+	if cfg.SmallMaxWH != 0 {
+		config.SmallMaxWH = cfg.SmallMaxWH
 	}
 	if cfg.AlbumID != 0 {
 		config.AlbumID = cfg.AlbumID
@@ -156,14 +161,18 @@ func (f *FileInfo) JoinInfo() (path string) {
 }
 
 func (f *FileInfo) SaveImage(path string) (err error) {
-	if f.Config.UploadType == 1 { //上传类型1：文章上传的图片
+	if f.Config.UploadType == 1 { //上传类型1：文章上传，心情上传，区别是SmallMaxWH，默认720
 		if err = f.CreatePicScale(path, 0, 0, 88); err != nil {
 			return
 		}
-		mw, mh := f.RetMaxWH(720)
 		small := f.ChangeToSmall(path)
+		mw, mh := f.RetMaxWH(f.Config.SmallMaxWH)
 		if err = f.CreatePicScale(small, mw, mh, 88); err != nil {
 			return
+		}
+		//保存成功，则删除旧资源
+		if !f.CheckSource() {
+			f.RemoveLastSource(f.Config.LastSource)
 		}
 		f.URL = strings.TrimLeft(small, ".")
 		return
@@ -172,9 +181,8 @@ func (f *FileInfo) SaveImage(path string) (err error) {
 		if err = f.CreatePicScale(path, f.Config.W, f.Config.H, 88); err != nil {
 			return
 		}
-		//保存成功，则删除旧资源
 		if !f.CheckSource() {
-			_ = os.Remove(".." + f.Config.LastSource)
+			f.RemoveLastSource(f.Config.LastSource, false)
 		}
 		f.URL = strings.TrimLeft(path, ".")
 		return
@@ -184,19 +192,11 @@ func (f *FileInfo) SaveImage(path string) (err error) {
 			return
 		}
 		small := f.ChangeToSmall(path)
-		if f.Config.AlbumID > 0 {
-			if err = f.CreatePicClip(small, 0, 0, 88); err != nil {
-				return
-			}
-		}
-		sw, sh := f.RetMaxWH(200)
-		if err = f.CreatePicScale(small, sw, sh, 88); err != nil {
+		if err = f.CreatePicClip(small, f.Config.W, f.Config.H, 88); err != nil {
 			return
 		}
-		//保存成功，则删除旧资源
 		if !f.CheckSource() {
-			_ = os.Remove(".." + f.Config.LastSource)
-			_ = os.Remove(".." + f.ChangeToSmall(f.Config.LastSource))
+			f.RemoveLastSource(f.Config.LastSource)
 		}
 		f.URL = strings.TrimLeft(path, ".")
 		return
@@ -207,25 +207,23 @@ func (f *FileInfo) SaveImage(path string) (err error) {
 /*
 * 图片裁剪
 * 入参:1、file，2、输出路径，3、原图width，4、原图height，5、精度
-* 规则:照片生成缩略图尺寸为190*135，先进行缩小，再进行平均裁剪
+* 规则:照片生成缩略图尺寸为w * h，先进行缩小，再进行平均裁剪
 *
 * 返回:error
  */
 func (f *FileInfo) CreatePicClip(path string, w, h, q int) error {
-	x0 := 0
-	x1 := 190
-	y0 := 0
-	y1 := 135
-	sh := h * 190 / w
-	sw := w * 135 / h
+	rw, rh := f.RetRealWHEXT()
+	x0, x1, y0, y1 := 0, w, 0, h
+	sh := rh * w / rw
+	sw := rw * h / rh
 	if sh > 135 {
-		f.Image = resize.Resize(uint(190), uint(sh), f.Image, resize.Lanczos3)
-		y0 = (sh - 135) / 4
-		y1 = y0 + 135
+		f.Image = resize.Resize(uint(w), uint(sh), f.Image, resize.Lanczos3)
+		y0 = (sh - h) / 4
+		y1 = y0 + h
 	} else {
-		f.Image = resize.Resize(uint(sw), uint(135), f.Image, resize.Lanczos3)
-		x0 = (sw - 190) / 2
-		x1 = x0 + 190
+		f.Image = resize.Resize(uint(sw), uint(h), f.Image, resize.Lanczos3)
+		x0 = (sw - w) / 2
+		x1 = x0 + w
 	}
 	out, err := os.Create(path)
 	if err != nil {
@@ -335,9 +333,15 @@ func (f *FileInfo) GetFrame(mediaPath string) (string, error) {
 	return buf.String(), nil
 }
 
-func (f *FileInfo) RemoveLastSource(lastSrc string) {
+func (f *FileInfo) RemoveLastSource(lastSrc string, small ...bool) {
+	removeSmall := true
+	if len(small) > 0 {
+		removeSmall = small[0]
+	}
 	_ = os.Remove(".." + lastSrc)
-	_ = os.Remove(".." + f.ChangeToSmall(lastSrc))
+	if removeSmall {
+		_ = os.Remove(".." + f.ChangeToSmall(lastSrc))
+	}
 }
 
 func (f *FileInfo) ParseMediaExt(fileName string) {
