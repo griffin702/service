@@ -165,7 +165,7 @@ func (f *FileInfo) JoinInfo() (path string) {
 }
 
 func (f *FileInfo) SaveImage(path string) (err error) {
-	if f.Config.UploadType == 1 { //上传类型1：文章上传，心情上传，区别是SmallMaxWH，默认720
+	if f.Config.UploadType == 1 { //上传类型1：文章上传，保存大图小图，默认small限制720px
 		if err = f.CreatePicScale(path, 0, 0, 88); err != nil {
 			f.Message = err.Error()
 			return
@@ -198,15 +198,23 @@ func (f *FileInfo) SaveImage(path string) (err error) {
 		f.Message = "上传成功"
 		return
 	}
-	if f.Config.UploadType == 3 { //上传类型3：照片上传，同时保存大图小图
+	if f.Config.UploadType == 3 { //上传类型3：照片上传，album=0为心情上传，同时保存大图小图
 		if err = f.CreatePicScale(path, 0, 0, 88); err != nil {
 			f.Message = err.Error()
 			return
 		}
 		small := f.ChangeToSmall(path)
-		if err = f.CreatePicClip(small, f.Config.W, f.Config.H, 88); err != nil {
-			f.Message = err.Error()
-			return
+		if f.Config.AlbumID > 0 {
+			if err = f.CreatePicClip(small, f.Config.W, f.Config.H, 88); err != nil {
+				f.Message = err.Error()
+				return
+			}
+		} else {
+			mw, mh := f.RetMaxWH(f.Config.SmallMaxWH)
+			if err = f.CreatePicScale(small, mw, mh, 88); err != nil {
+				f.Message = err.Error()
+				return
+			}
 		}
 		if !f.CheckSource() {
 			f.RemoveLastSource(f.Config.LastSource)
