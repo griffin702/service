@@ -52,6 +52,8 @@ type FileInfo struct {
 	URL           string      `json:"url"`
 	ScreenShotURL string      `json:"screen_shot_url"`
 	DialogID      string      `json:"dialog_id"`
+	Success       int         `json:"success"`
+	Message       string      `json:"message"`
 }
 
 type Sizer interface {
@@ -111,17 +113,19 @@ func NewFileInfo(file io.Reader, fileName string, opt ...*Config) (*FileInfo, er
 		var err error
 		f.Image, f.FileType, err = image.Decode(file)
 		if err != nil {
-			return nil, err
+			f.Message = err.Error()
+			return f, err
 		}
 	}
 	if err := f.ValidateType(); err != nil {
-		return nil, err
+		f.Message = err.Error()
+		return f, err
 	}
 	if size, ok := file.(Sizer); ok {
 		f.Size = size.Size()
 	}
 	if err := f.ValidateSize(); err != nil {
-		return nil, err
+		return f, err
 	}
 	return f, nil
 }
@@ -163,11 +167,13 @@ func (f *FileInfo) JoinInfo() (path string) {
 func (f *FileInfo) SaveImage(path string) (err error) {
 	if f.Config.UploadType == 1 { //上传类型1：文章上传，心情上传，区别是SmallMaxWH，默认720
 		if err = f.CreatePicScale(path, 0, 0, 88); err != nil {
+			f.Message = err.Error()
 			return
 		}
 		small := f.ChangeToSmall(path)
 		mw, mh := f.RetMaxWH(f.Config.SmallMaxWH)
 		if err = f.CreatePicScale(small, mw, mh, 88); err != nil {
+			f.Message = err.Error()
 			return
 		}
 		//保存成功，则删除旧资源
@@ -175,30 +181,39 @@ func (f *FileInfo) SaveImage(path string) (err error) {
 			f.RemoveLastSource(f.Config.LastSource)
 		}
 		f.URL = strings.TrimLeft(small, ".")
+		f.Success = 1
+		f.Message = "上传成功"
 		return
 	}
 	if f.Config.UploadType == 2 { //上传类型2：头像、封面等上传，只保存小图
 		if err = f.CreatePicScale(path, f.Config.W, f.Config.H, 88); err != nil {
+			f.Message = err.Error()
 			return
 		}
 		if !f.CheckSource() {
 			f.RemoveLastSource(f.Config.LastSource, false)
 		}
 		f.URL = strings.TrimLeft(path, ".")
+		f.Success = 1
+		f.Message = "上传成功"
 		return
 	}
 	if f.Config.UploadType == 3 { //上传类型3：照片上传，同时保存大图小图
 		if err = f.CreatePicScale(path, 0, 0, 88); err != nil {
+			f.Message = err.Error()
 			return
 		}
 		small := f.ChangeToSmall(path)
 		if err = f.CreatePicClip(small, f.Config.W, f.Config.H, 88); err != nil {
+			f.Message = err.Error()
 			return
 		}
 		if !f.CheckSource() {
 			f.RemoveLastSource(f.Config.LastSource)
 		}
 		f.URL = strings.TrimLeft(path, ".")
+		f.Success = 1
+		f.Message = "上传成功"
 		return
 	}
 	return
@@ -328,8 +343,12 @@ func (f *FileInfo) GetFrame(mediaPath string) (string, error) {
 	buf := new(bytes.Buffer)
 	cmd.Stdout = buf
 	if err := cmd.Run(); err != nil {
+		f.Success = 0
+		f.Message = err.Error()
 		return "", err
 	}
+	f.Success = 1
+	f.Message = "上传成功"
 	return buf.String(), nil
 }
 
