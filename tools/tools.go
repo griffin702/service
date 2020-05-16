@@ -397,8 +397,8 @@ func (t *Tool) BcryptHashCompare(current string, req string) bool {
 }
 
 // CaptchaGenerate 生成captcha
-func (t *Tool) CaptchaGenerate(w, h, codeLen, mode int, opt ...string) (code string, image captcha.Image, err error) {
-	return captcha.Generate(w, h, codeLen, mode, opt...)
+func (t *Tool) CaptchaGenerate(w, h, codeLen, mode int, debug bool, opt ...string) (code string, image captcha.Image, err error) {
+	return captcha.Generate(w, h, codeLen, mode, debug, opt...)
 }
 
 // MustUUID 创建UUID，如果发生错误则抛出panic

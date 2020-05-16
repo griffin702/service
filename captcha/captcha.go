@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"github.com/golang/freetype"
 	"github.com/llgcode/draw2d"
 	"github.com/llgcode/draw2d/draw2dimg"
@@ -37,7 +36,7 @@ func (i Image) ToBase64String() string {
 
 //"data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
 // CaptchaGenerate 生成captcha
-func Generate(w, h, codeLen, mode int, opt ...string) (code string, image Image, err error) {
+func Generate(w, h, codeLen, mode int, debug bool, opt ...string) (code string, image Image, err error) {
 	path, name := "../configs", "captcha"
 	if len(opt) == 2 {
 		path = opt[0]
@@ -47,6 +46,9 @@ func Generate(w, h, codeLen, mode int, opt ...string) (code string, image Image,
 	cp.SetFontPath(path)
 	cp.SetFontName(name)
 	cp.SetMode(mode)
+	if debug {
+		cp.Debug()
+	}
 	cp.Dpi = 88
 	c, img := cp.OutPut()
 	buf := new(bytes.Buffer)
@@ -68,6 +70,7 @@ type Captcha struct {
 	Dpi                int
 	FontPath, FontName string
 	mode               int
+	debug              bool
 }
 
 // 实例化验证码
@@ -177,17 +180,20 @@ func (captcha *Captcha) doImage(dest *image.RGBA) (string, *image.RGBA) {
 	captcha.doSinLine(gc)
 
 	var codeStr string
+	var info string
 	if captcha.mode == 1 {
 		ret, formula := captcha.getFormulaMixData()
-		fmt.Println(formula)
+		info = strings.Join(formula, " ")
 		codeStr = ret
 		captcha.doFormula(gc, formula)
 	} else {
 		codeStr = captcha.getRandCode()
-		fmt.Println(codeStr)
+		info = codeStr
 		captcha.doCode(gc, codeStr)
 	}
-
+	if captcha.debug {
+		log.Println(info)
+	}
 	return codeStr, dest
 }
 
@@ -320,6 +326,11 @@ func (captcha *Captcha) SetFontName(FontName string) {
 // 设置字体大小
 func (captcha *Captcha) SetFontSize(fontSize float64) {
 	captcha.FontSize = fontSize
+}
+
+// 设置字体大小
+func (captcha *Captcha) Debug() {
+	captcha.debug = true
 }
 
 //设置相关字体
