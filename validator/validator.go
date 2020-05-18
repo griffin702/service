@@ -88,18 +88,14 @@ func (v *defaultValidator) RegisterValidation(tag string, fn validator.Func, cal
 	return v.validate.RegisterValidation(tag, fn, callValidationEvenIfNull...)
 }
 
-// 自定义验证函数
+// checkNewPassword：当password不为空时，需检查NewPassword也不能为空
 func checkNewPassword(fl validator.FieldLevel) bool {
 	p := fl.Field()
 	if p.Len() > 0 {
 		np := fl.Parent().Elem().FieldByName("NewPassword")
-		if np.Len() == 0 {
-			return false
-		}
-		npa := fl.Parent().Elem().FieldByName("NewPasswordAgain")
-		if npa.Len() == 0 {
-			return false
+		if np.Len() > 0 {
+			return true
 		}
 	}
-	return true
+	return false
 }
