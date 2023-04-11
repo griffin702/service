@@ -101,7 +101,7 @@ func New(cfg ...Config) *Middleware {
 	return &Middleware{Config: c}
 }
 
-func logf(ctx iris.Context, format string, args ...interface{}) {
+func logf(ctx context.Context, format string, args ...interface{}) {
 	ctx.Application().Logger().Debugf(format, args...)
 }
 
