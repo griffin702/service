@@ -10,10 +10,10 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"io/ioutil"
 	"log"
 	"math"
 	"math/big"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -34,10 +34,10 @@ func (i Image) ToBase64String() string {
 	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(i)
 }
 
-//"data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
+// "data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
 // CaptchaGenerate 生成captcha
 func Generate(w, h, codeLen, mode int, debug bool, opt ...string) (code string, image Image, err error) {
-	path, name := "../configs", "captcha"
+	path, name := "configs", "captcha"
 	if len(opt) == 2 {
 		path = opt[0]
 		name = opt[1]
@@ -308,7 +308,7 @@ func (captcha *Captcha) doSinLine(gc *draw2dimg.GraphicContext) {
 	gc.Stroke()
 }
 
-//设置模式
+// 设置模式
 func (captcha *Captcha) SetMode(mode int) {
 	captcha.mode = mode
 }
@@ -333,7 +333,7 @@ func (captcha *Captcha) Debug() {
 	captcha.debug = true
 }
 
-//设置相关字体
+// 设置相关字体
 func (captcha *Captcha) setFont(gc *draw2dimg.GraphicContext) {
 	if captcha.FontPath == "" {
 		panic("the font path is empty!")
@@ -345,7 +345,7 @@ func (captcha *Captcha) setFont(gc *draw2dimg.GraphicContext) {
 	// 字体文件
 	fontFile := strings.TrimRight(captcha.FontPath, "/") + "/" + strings.TrimLeft(captcha.FontName, "/") + ".ttf"
 
-	fontBytes, err := ioutil.ReadFile(fontFile)
+	fontBytes, err := os.ReadFile(fontFile)
 	if err != nil {
 		log.Println(err)
 		return
